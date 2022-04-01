@@ -5,7 +5,11 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RaffleFactory is VRFConsumerBase, Ownable {
+/// A `RaffleManager` is a smart contract that allows to create raffles
+/// where participants can buy tickets and have their chances of winning
+/// the total accumulated amount of the raffle.
+/// This contract only allows managing one raffle at a time.
+contract RaffleManager is VRFConsumerBase, Ownable {
     /// The price that it costs to buy one ticket, in USDC, with 6 decimals
     uint256 public ticketPrice;
 
@@ -19,9 +23,9 @@ contract RaffleFactory is VRFConsumerBase, Ownable {
     address public usdcToken;
 
     /// The current state of the raffle
-    /// 0 = `open` -> A raffle has started and users can buy tickets
-    /// 1 = `closed` -> There are no ongoing raffles
-    /// 2 = `calculatingWinner` -> A raffle has recently finished and the contract is calculating a winner
+    /// 0 = `open` -> A raffle has started and users can buy tickets.
+    /// 1 = `closed` -> There are no ongoing raffles.
+    /// 2 = `calculatingWinner` -> A raffle has recently finished and the contract is calculating a winner.
     enum RaffleState {
         open,
         closed,
@@ -29,33 +33,31 @@ contract RaffleFactory is VRFConsumerBase, Ownable {
     }
     RaffleState public currentState = RaffleState.closed;
 
+    /// An event that is triggered when this contract requests a random number from Chainlink's VRF.
     event RequestedRandomness(bytes32 requestId);
 
-    /// The amount of LINK required as gas to get a random number from Chainlink VRF, with 18 decimals
+    /// The amount of LINK required as gas to get a random number from Chainlink's VRF, with 18 decimals.
     uint256 public vrfLinkFee;
 
-    /// A value that identifies unequivocally the Chainlink VRF node
+    /// A value that identifies unequivocally the Chainlink'sVRF node.
     bytes32 public vrfKeyHash;
 
-    /// The last random number that was obtained from Chainlink VRF
+    /// The last random number that was obtained from Chainlink's VRF.
     uint256 lastRandomNumber;
 
-    /// The last winner ticket that was picked
+    /// The last winner ticket that was picked.
     uint256 public lastWinnerTicket;
 
-    /// The last winner address
+    /// The last winner address.
     address public lastWinnerAddress;
 
-    /// The winner address of each raffle
-    mapping(uint256 => address) public raffleWinner;
-
-    /// Maps each ticket number to the address that bought that ticket
+    /// Maps each ticket number to the address that bought that ticket.
     mapping(uint256 => address) public ticketAddresses;
 
-    /// The list of tickets that have been sold, in the order that they were sold
+    /// The list of tickets that have been sold, in the order that they were sold.
     uint256[] soldTickets;
 
-    /// Maps addresses to the amount of USDC that they can claim in prizes, using 6 decimals
+    /// Maps addresses to the amount of USDC that they can claim in prizes, using 6 decimals.
     mapping(address => uint256) public addressToPrizeAmount;
 
     constructor(
@@ -70,7 +72,7 @@ contract RaffleFactory is VRFConsumerBase, Ownable {
     ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
         require(_ticketMinNumber >= 0, "_ticketMinNumber cannot be negative");
         require(
-            _ticketMinNumber <= ticketMaxNumber,
+            _ticketMinNumber <= _ticketMaxNumber,
             "_ticketMaxNumber must be greater than _ticketMinNumber"
         );
         require(

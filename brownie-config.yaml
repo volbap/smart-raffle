@@ -12,11 +12,12 @@ wallets:
 networks:
   default: development
   development:
-    link_key_hash: '0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311' # same as rinkeby (it's just a number)
-    link_fee: 1_0000000000_0000000 # 0.1 LINK = 10 e17 WEI
+    vrf_key_hash: '0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311' # same as rinkeby (it's just a number)
+    vrf_link_fee: 1_0000000000_0000000 # 0.1 LINK = 10 e17 WEI
   rinkeby:
     vrf_coordinator: '0xb3dCcb4Cf7a26f6cf6B120Cf5A73875B7BBc655B'
     link_token: '0x01BE23585060835E02B77ef475b0Cc51aA1e0709'
-    link_key_hash: '0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311'
-    link_fee: 1_0000000000_0000000 # 0.1 LINK = 10 e17 WEI
+    vrf_key_hash: '0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311'
+    vrf_link_fee: 1_0000000000_0000000 # 0.1 LINK = 10 e17 WEI
+    usdc_token: '0xeb8f08a975ab53e34d8a0330e0d34de942c95926'
     publish_source: True
