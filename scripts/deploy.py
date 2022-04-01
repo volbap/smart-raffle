@@ -1,10 +1,6 @@
 from brownie import RaffleManager, config, network
 from scripts.helpers import get_account
 
-TICKET_PRICE = 10
-TICKET_MIN_NUMBER = 1
-TICKET_MAX_NUMBER = 100
-
 
 def main():
     deploy_raffle_manager()
@@ -20,9 +16,6 @@ def deploy_raffle_manager():
     link_token = network_config["link_token"]
     publish_source = network_config.get("publish_source", False)
     manager = RaffleManager.deploy(
-        TICKET_PRICE,
-        TICKET_MIN_NUMBER,
-        TICKET_MAX_NUMBER,
         usdc_token,
         vrf_coordinator,
         vrf_link_fee,

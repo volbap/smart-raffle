@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// the total accumulated amount of the raffle.
 /// This contract only allows managing one raffle at a time.
 contract RaffleManager is VRFConsumerBase, Ownable {
-    /// The price that it costs to buy one ticket, in USDC, with 6 decimals
+    /// The price that it costs to buy one ticket, in USDC, with 6 decimals.
     uint256 public ticketPrice;
 
     /// The minimum ticket number (e.g. 1)
@@ -19,16 +19,16 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// The maximum ticket number (e.g. 200)
     uint256 public ticketMaxNumber;
 
-    /// The address of the USDC token contract, which is used as currency for the raffle
+    /// The address of the USDC token contract, which is used as currency for the raffle.
     address public usdcToken;
 
-    /// The current state of the raffle
-    /// 0 = `open` -> A raffle has started and users can buy tickets.
-    /// 1 = `closed` -> There are no ongoing raffles.
+    /// The current state of the raffle.
+    /// 0 = `closed` -> Default state. There are no ongoing raffles.
+    /// 1 = `open` -> There is an ongoing raffle and users can buy tickets.
     /// 2 = `calculatingWinner` -> A raffle has recently finished and the contract is calculating a winner.
     enum RaffleState {
-        open,
         closed,
+        open,
         calculatingWinner
     }
     RaffleState public currentState = RaffleState.closed;
@@ -39,57 +39,43 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// The amount of LINK required as gas to get a random number from Chainlink's VRF, with 18 decimals.
     uint256 public vrfLinkFee;
 
-    /// A value that identifies unequivocally the Chainlink'sVRF node.
+    /// A value that identifies unequivocally the Chainlink's VRF node.
     bytes32 public vrfKeyHash;
 
     /// The last random number that was obtained from Chainlink's VRF.
-    uint256 lastRandomNumber;
+    uint256 public lastRandomNumber;
 
-    /// The last winner ticket that was picked.
+    /// The last winner ticket number that was picked.
     uint256 public lastWinnerTicket;
 
-    /// The last winner address.
+    /// The address that bought the last winner ticket number.
     address public lastWinnerAddress;
 
     /// Maps each ticket number to the address that bought that ticket.
     mapping(uint256 => address) public ticketAddresses;
 
     /// The list of tickets that have been sold, in the order that they were sold.
+    // TODO: Convert to mapping (uint256 => bool).
+    // Probably requires a separate variable to track `soldTicketsCount`.
+    // maybe it's convenient to use `ticketAddresses` directly.
     uint256[] soldTickets;
 
-    /// Maps addresses to the amount of USDC that they can claim in prizes, using 6 decimals.
+    /// Maps addresses to the amount of USDC earned in prizes, using 6 decimals.
     mapping(address => uint256) public addressToPrizeAmount;
 
     constructor(
-        uint256 _ticketPrice,
-        uint256 _ticketMinNumber,
-        uint256 _ticketMaxNumber,
         address _usdcToken,
         address _vrfCoordinator,
         uint256 _vrfLinkFee,
         bytes32 _vrfKeyHash,
         address _linkToken
     ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
-        require(_ticketMinNumber >= 0, "_ticketMinNumber cannot be negative");
-        require(
-            _ticketMinNumber <= _ticketMaxNumber,
-            "_ticketMaxNumber must be greater than _ticketMinNumber"
-        );
-        require(
-            _ticketMaxNumber <= type(uint256).max,
-            "_ticketMaxNumber is too high"
-        );
-        require(_ticketPrice > 0, "_ticketPrice cannot be negative");
-        require(_ticketPrice <= type(uint256).max, "_ticketPrice is too high");
-        ticketPrice = _ticketPrice;
-        ticketMinNumber = _ticketMinNumber;
-        ticketMaxNumber = _ticketMaxNumber;
         usdcToken = _usdcToken;
         vrfLinkFee = _vrfLinkFee;
         vrfKeyHash = _vrfKeyHash;
     }
 
-    /// Buys one ticket for msg.sender, specified by `_ticketNumber`.
+    /// Buys one ticket for `msg.sender`, specified by `_ticketNumber`.
     function buyTicket(uint256 _ticketNumber) public {
         require(currentState == RaffleState.open, "Raffle has not started yet");
         require(
@@ -106,13 +92,15 @@ contract RaffleManager is VRFConsumerBase, Ownable {
         soldTickets.push(_ticketNumber);
     }
 
-    /// Returns the current prize that this raffle has gathered.
+    /// Returns the current prize for the ongoing raffle.
+    /// The prize is calculated by summing the value of all the tickets
+    /// that have been sold.
     /// Amount returned is represented in USDC with 6 decimals.
     function getCurrentPrizeAmount() public view returns (uint256) {
         return soldTickets.length * ticketPrice;
     }
 
-    /// Redeems the amount won in finished raffles.
+    /// Claims the amount won by `msg.sender` in closed raffles.
     function redeemPrize() public {
         require(
             addressToPrizeAmount[msg.sender] > 0,
@@ -124,12 +112,30 @@ contract RaffleManager is VRFConsumerBase, Ownable {
         );
     }
 
-    /// Opens a new raffle so users can start buying tickets.
-    function startRaffle() public onlyOwner {
+    /// Opens a new raffle so participants can start buying tickets.
+    function openRaffle(
+        uint256 _ticketPrice,
+        uint256 _ticketMinNumber,
+        uint256 _ticketMaxNumber
+    ) public onlyOwner {
         require(
             currentState == RaffleState.closed,
             "There is raffle in progress already. Can't open a new raffle"
         );
+        require(_ticketMinNumber >= 0, "_ticketMinNumber cannot be negative");
+        require(
+            _ticketMinNumber <= _ticketMaxNumber,
+            "_ticketMaxNumber must be greater than _ticketMinNumber"
+        );
+        require(
+            _ticketMaxNumber <= type(uint256).max,
+            "_ticketMaxNumber is too high"
+        );
+        require(_ticketPrice > 0, "_ticketPrice cannot be negative");
+        require(_ticketPrice <= type(uint256).max, "_ticketPrice is too high");
+        ticketPrice = _ticketPrice;
+        ticketMinNumber = _ticketMinNumber;
+        ticketMaxNumber = _ticketMaxNumber;
         currentState = RaffleState.open;
     }
 
@@ -137,10 +143,10 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// Once calculated, the winner ticket will be stored in `_lastWinnerTicket`.
     /// At that point, the address who bought that ticket can claim the funds
     /// of that raffle using the function `redeemPrize`.
-    function finishRaffle() public onlyOwner {
+    function closeRaffle() public onlyOwner {
         require(
             currentState == RaffleState.open,
-            "There isn't any ongoing raffle to finish"
+            "There isn't any ongoing raffle to close"
         );
         currentState = RaffleState.calculatingWinner;
         startCalculatingWinner();
