@@ -75,7 +75,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
         vrfKeyHash = _vrfKeyHash;
     }
 
-    /// Buys one ticket for `msg.sender`, specified by `_ticketNumber`.
+    /// Buys one ticket for the caller, specified by `_ticketNumber`.
     function buyTicket(uint256 _ticketNumber) public {
         require(currentState == RaffleState.open, "Raffle has not started yet");
         require(
@@ -100,7 +100,9 @@ contract RaffleManager is VRFConsumerBase, Ownable {
         return soldTickets.length * ticketPrice;
     }
 
-    /// Claims the amount won by `msg.sender` in closed raffles.
+    /// Claims the amount won by the caller in closed raffles.
+    /// If the caller has won raffles, the total amount won
+    /// will get transferred to them.
     function redeemPrize() public {
         require(
             addressToPrizeAmount[msg.sender] > 0,
