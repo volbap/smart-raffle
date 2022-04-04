@@ -10,6 +10,7 @@ def deploy_raffle_manager():
     account = get_account()
     network_config = config["networks"][network.show_active()]
     usdc_token = network_config["usdc_token"]
+    usdc_decimals = network_config["usdc_decimals"]
     vrf_coordinator = network_config["vrf_coordinator"]
     vrf_link_fee = network_config["vrf_link_fee"]
     vrf_key_hash = network_config["vrf_key_hash"]
@@ -17,6 +18,7 @@ def deploy_raffle_manager():
     publish_source = network_config.get("publish_source", False)
     manager = RaffleManager.deploy(
         usdc_token,
+        usdc_decimals,
         vrf_coordinator,
         vrf_link_fee,
         vrf_key_hash,

@@ -10,7 +10,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// the total accumulated amount of the raffle.
 /// This contract only allows managing one raffle at a time.
 contract RaffleManager is VRFConsumerBase, Ownable {
-    /// The price that it costs to buy one ticket, in USDC, with 6 decimals.
+    /// The amount of tokens that it costs to buy one ticket.
+    /// The ERC20 token used to represent this price is specified by `tokenAddress`.
+    /// This price works with the number of decimals specified by `tokenDecimals`.
     uint256 public ticketPrice;
 
     /// The minimum ticket number (e.g. 1)
@@ -19,8 +21,11 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// The maximum ticket number (e.g. 200)
     uint256 public ticketMaxNumber;
 
-    /// The address of the USDC token contract, which is used as currency for the raffle.
-    address public usdcToken;
+    /// The address of the ERC20 token contract which is used as currency for the raffle.
+    address public tokenAddress;
+
+    /// The number of decimals that the ERC20 token specified by `tokenAddress` works with.
+    address public tokenDecimals;
 
     /// The current state of the raffle.
     /// 0 = `closed` -> Default state. There are no ongoing raffles.
@@ -60,17 +65,21 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     // maybe it's convenient to use `ticketAddresses` directly.
     uint256[] soldTickets;
 
-    /// Maps addresses to the amount of USDC earned in prizes, using 6 decimals.
+    /// Maps addresses to the amount of tokens earned in prizes.
+    /// The token is specified by `tokenAddress`.
+    /// The number of decimals is specified by `tokenDecimals`.
     mapping(address => uint256) public addressToPrizeAmount;
 
     constructor(
-        address _usdcToken,
+        address _tokenAddress,
+        address _tokenDecimals,
         address _vrfCoordinator,
         uint256 _vrfLinkFee,
         bytes32 _vrfKeyHash,
         address _linkToken
     ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
-        usdcToken = _usdcToken;
+        tokenAddress = _tokenAddress;
+        tokenDecimals = _tokenDecimals;
         vrfLinkFee = _vrfLinkFee;
         vrfKeyHash = _vrfKeyHash;
     }
@@ -87,7 +96,11 @@ contract RaffleManager is VRFConsumerBase, Ownable {
             ticketAddresses[_ticketNumber] == address(0),
             "Ticket number not available"
         );
-        IERC20(usdcToken).transferFrom(msg.sender, address(this), ticketPrice);
+        IERC20(tokenAddress).transferFrom(
+            msg.sender,
+            address(this),
+            ticketPrice
+        );
         ticketAddresses[_ticketNumber] = msg.sender;
         soldTickets.push(_ticketNumber);
     }
@@ -95,7 +108,8 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// Returns the current prize for the ongoing raffle.
     /// The prize is calculated by summing the value of all the tickets
     /// that have been sold.
-    /// Amount returned is represented in USDC with 6 decimals.
+    /// Amount returned is represented in the token specified by `tokenAddress`,
+    /// with the number of decimals specified by `tokenDecimals`.
     function getCurrentPrizeAmount() public view returns (uint256) {
         return soldTickets.length * ticketPrice;
     }
@@ -108,7 +122,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
             addressToPrizeAmount[msg.sender] > 0,
             "There is no prize for this address"
         );
-        IERC20(usdcToken).transfer(
+        IERC20(tokenAddress).transfer(
             msg.sender,
             addressToPrizeAmount[msg.sender]
         );

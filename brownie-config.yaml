@@ -20,4 +20,5 @@ networks:
     vrf_key_hash: '0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311'
     vrf_link_fee: 1_0000000000_0000000 # 0.1 LINK = 10 e17 WEI
     usdc_token: '0xeb8f08a975ab53e34d8a0330e0d34de942c95926'
+    usdc_decimals: 6
     publish_source: True
