@@ -59,10 +59,8 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// Maps each ticket number to the address that bought that ticket.
     mapping(uint256 => address) public ticketAddresses;
 
-    /// The list of tickets that have been sold, in the order that they were sold.
-    // TODO: Convert to mapping (uint256 => bool).
-    // Probably requires a separate variable to track `soldTicketsCount`.
-    // maybe it's convenient to use `ticketAddresses` directly.
+    /// The list of ticket numbers that have been sold.
+    /// They are stored in the order that they were sold.
     uint256[] soldTickets;
 
     /// Maps addresses to the amount of tokens earned in prizes.
@@ -116,7 +114,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
 
     /// Claims the amount won by the caller in closed raffles.
     /// If the caller has won raffles, the total amount won
-    /// will get transferred to them.
+    /// will get transferred to their address.
     function redeemPrize() public {
         require(
             addressToPrizeAmount[msg.sender] > 0,
