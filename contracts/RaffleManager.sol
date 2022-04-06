@@ -25,7 +25,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     address public tokenAddress;
 
     /// The number of decimals that the ERC20 token specified by `tokenAddress` works with.
-    address public tokenDecimals;
+    uint8 public tokenDecimals;
 
     /// The current state of the raffle.
     /// 0 = `closed` -> Default state. There are no ongoing raffles.
@@ -41,11 +41,17 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// An event that is triggered when this contract requests a random number from Chainlink's VRF.
     event RequestedRandomness(bytes32 requestId);
 
-    /// The amount of LINK required as gas to get a random number from Chainlink's VRF, with 18 decimals.
-    uint256 public vrfLinkFee;
+    /// An event that is triggered when we have a new winner.
+    event ObtainedWinner(address winnerAddress);
 
     /// A value that identifies unequivocally the Chainlink's VRF node.
     bytes32 public vrfKeyHash;
+
+    /// The amount of LINK required as gas to get a random number from Chainlink's VRF, with 18 decimals.
+    uint256 public vrfLinkFee;
+
+    /// The address of the LINK token used to pay for VRF randomness requests.
+    address public vrfLinkToken;
 
     /// The last random number that was obtained from Chainlink's VRF.
     uint256 public lastRandomNumber;
@@ -55,6 +61,9 @@ contract RaffleManager is VRFConsumerBase, Ownable {
 
     /// The address that bought the last winner ticket number.
     address public lastWinnerAddress;
+
+    /// Keeps track of how many raffles have been played.
+    uint256 rafflesCount;
 
     /// Maps each ticket number to the address that bought that ticket.
     mapping(uint256 => address) public ticketAddresses;
@@ -70,16 +79,17 @@ contract RaffleManager is VRFConsumerBase, Ownable {
 
     constructor(
         address _tokenAddress,
-        address _tokenDecimals,
+        uint8 _tokenDecimals,
         address _vrfCoordinator,
-        uint256 _vrfLinkFee,
         bytes32 _vrfKeyHash,
-        address _linkToken
-    ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
+        uint256 _vrfLinkFee,
+        address _vrfLinkToken
+    ) VRFConsumerBase(_vrfCoordinator, _vrfLinkToken) {
         tokenAddress = _tokenAddress;
         tokenDecimals = _tokenDecimals;
-        vrfLinkFee = _vrfLinkFee;
         vrfKeyHash = _vrfKeyHash;
+        vrfLinkFee = _vrfLinkFee;
+        vrfLinkToken = _vrfLinkToken;
     }
 
     /// Buys one ticket for the caller, specified by `_ticketNumber`.
@@ -93,6 +103,10 @@ contract RaffleManager is VRFConsumerBase, Ownable {
         require(
             ticketAddresses[_ticketNumber] == address(0),
             "Ticket number not available"
+        );
+        require(
+            IERC20(tokenAddress).balanceOf(msg.sender) >= ticketPrice,
+            "This address doesn't have enough balance to buy a ticket"
         );
         IERC20(tokenAddress).transferFrom(
             msg.sender,
@@ -136,17 +150,10 @@ contract RaffleManager is VRFConsumerBase, Ownable {
             currentState == RaffleState.closed,
             "There is raffle in progress already. Can't open a new raffle"
         );
-        require(_ticketMinNumber >= 0, "_ticketMinNumber cannot be negative");
         require(
             _ticketMinNumber <= _ticketMaxNumber,
             "_ticketMaxNumber must be greater than _ticketMinNumber"
         );
-        require(
-            _ticketMaxNumber <= type(uint256).max,
-            "_ticketMaxNumber is too high"
-        );
-        require(_ticketPrice > 0, "_ticketPrice cannot be negative");
-        require(_ticketPrice <= type(uint256).max, "_ticketPrice is too high");
         ticketPrice = _ticketPrice;
         ticketMinNumber = _ticketMinNumber;
         ticketMaxNumber = _ticketMaxNumber;
@@ -168,6 +175,10 @@ contract RaffleManager is VRFConsumerBase, Ownable {
 
     /// Starts calculating the winner ticket.
     function startCalculatingWinner() private returns (uint256) {
+        require(
+            IERC20(vrfLinkToken).balanceOf(address(this)) >= vrfLinkFee,
+            "This contract doesn't have enough LINK to request randomness from Chainlink's VRF"
+        );
         // We'll connect to the Chainlink VRF Node
         // using the "Request and Receive" cycle model
 
@@ -208,6 +219,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
 
         addressToPrizeAmount[winnerAddress] += getCurrentPrizeAmount(); // test +=
 
+        emit ObtainedWinner(winnerAddress);
         resetRaffle();
     }
 
@@ -216,6 +228,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
         resetTicketAddressesMapping();
         soldTickets = new uint256[](0);
         currentState = RaffleState.closed;
+        rafflesCount += 1;
     }
 
     function resetTicketAddressesMapping() private {
