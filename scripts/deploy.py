@@ -31,7 +31,6 @@ def main():
 def deploy_raffle_manager():
     network_config = config["networks"][network.show_active()]
     token_address = network_config["token_address"]
-    token_decimals = network_config["token_decimals"]
     vrf_coordinator = network_config["vrf_coordinator"]
     vrf_link_fee = network_config["vrf_link_fee"]
     vrf_key_hash = network_config["vrf_key_hash"]
@@ -39,7 +38,6 @@ def deploy_raffle_manager():
     publish_source = network_config.get("publish_source", False)
     manager = RaffleManager.deploy(
         token_address,
-        token_decimals,
         vrf_coordinator,
         vrf_key_hash,
         vrf_link_fee,

@@ -63,14 +63,14 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     address public lastWinnerAddress;
 
     /// Keeps track of how many raffles have been played.
-    uint256 rafflesCount;
+    uint256 public rafflesCount;
 
     /// Maps each ticket number to the address that bought that ticket.
     mapping(uint256 => address) public ticketAddresses;
 
     /// The list of ticket numbers that have been sold.
     /// They are stored in the order that they were sold.
-    uint256[] soldTickets;
+    uint256[] public soldTickets;
 
     /// Maps addresses to the amount of tokens earned in prizes.
     /// The token is specified by `tokenAddress`.
@@ -141,6 +141,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     }
 
     /// Opens a new raffle so participants can start buying tickets.
+    /// Only the contract owner can open a raffle.
     function openRaffle(
         uint256 _ticketPrice,
         uint256 _ticketMinNumber,
@@ -164,6 +165,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// Once calculated, the winner ticket will be stored in `_lastWinnerTicket`.
     /// At that point, the address who bought that ticket can claim the funds
     /// of that raffle using the function `redeemPrize`.
+    /// Only the contract owner can close a raffle.
     function closeRaffle() public onlyOwner {
         require(
             currentState == RaffleState.open,

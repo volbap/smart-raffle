@@ -1,4 +1,4 @@
-from brownie import accounts, network, config, SmartRaffleCoin
+from brownie import accounts, network, Contract, config, SmartRaffleCoin, MockLinkToken
 
 FORKED_LOCAL_ENVIRONMENTS = ["mainnet-fork", "mainnet-fork-dev"]
 LOCAL_BLOCKCHAIN_ENVIRONMENTS = ["development", "ganache-local"]
@@ -41,10 +41,12 @@ def approve_smart_raffle_coin(spender):
     )
 
 
-def fund_with_link(contract_address, amount=10_0000000000_000000000):
+def fund_with_link(manager, amount=10_0000000000_000000000):
     account = get_account()
-    link_token = config["networks"][network.show_active()]["link_token"]
-    txn = link_token.transfer(contract_address, amount, {"from": account})
-    txn.wait(1)
-    print("💰 Fund RaffleManager contract with some LINK!")
+    link_token_address = manager.vrfLinkToken()
+    link_token = Contract.from_abi(
+        MockLinkToken._name, link_token_address, MockLinkToken.abi
+    )
+    txn = link_token.transfer(manager, amount, {"from": account})
+    print("💰 RaffleManager contract now has some LINK!")
     return txn
