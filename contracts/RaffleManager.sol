@@ -5,14 +5,13 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// A `RaffleManager` is a smart contract that allows to create raffles
+/// A `RaffleManager` is a smart contract that allows to play raffles
 /// where participants can buy tickets and have their chances of winning
-/// the total accumulated amount of the raffle.
+/// the total accumulated amount provided by tickets sold.
 /// This contract only allows managing one raffle at a time.
 contract RaffleManager is VRFConsumerBase, Ownable {
     /// The amount of tokens that it costs to buy one ticket.
     /// The ERC20 token used to represent this price is specified by `tokenAddress`.
-    /// This price works with the number of decimals specified by `tokenDecimals`.
     uint256 public ticketPrice;
 
     /// The minimum ticket number (e.g. 1)
@@ -23,9 +22,6 @@ contract RaffleManager is VRFConsumerBase, Ownable {
 
     /// The address of the ERC20 token contract which is used as currency for the raffle.
     address public tokenAddress;
-
-    /// The number of decimals that the ERC20 token specified by `tokenAddress` works with.
-    uint8 public tokenDecimals;
 
     /// The current state of the raffle.
     /// 0 = `closed` -> Default state. There are no ongoing raffles.
@@ -74,19 +70,16 @@ contract RaffleManager is VRFConsumerBase, Ownable {
 
     /// Maps addresses to the amount of tokens earned in prizes.
     /// The token is specified by `tokenAddress`.
-    /// The number of decimals is specified by `tokenDecimals`.
     mapping(address => uint256) public addressToPrizeAmount;
 
     constructor(
         address _tokenAddress,
-        uint8 _tokenDecimals,
         address _vrfCoordinator,
         bytes32 _vrfKeyHash,
         uint256 _vrfLinkFee,
         address _vrfLinkToken
     ) VRFConsumerBase(_vrfCoordinator, _vrfLinkToken) {
         tokenAddress = _tokenAddress;
-        tokenDecimals = _tokenDecimals;
         vrfKeyHash = _vrfKeyHash;
         vrfLinkFee = _vrfLinkFee;
         vrfLinkToken = _vrfLinkToken;
@@ -120,8 +113,7 @@ contract RaffleManager is VRFConsumerBase, Ownable {
     /// Returns the current prize for the ongoing raffle.
     /// The prize is calculated by summing the value of all the tickets
     /// that have been sold.
-    /// Amount returned is represented in the token specified by `tokenAddress`,
-    /// with the number of decimals specified by `tokenDecimals`.
+    /// Amount returned is represented in the token specified by `tokenAddress`.
     function getCurrentPrizeAmount() public view returns (uint256) {
         return soldTickets.length * ticketPrice;
     }
