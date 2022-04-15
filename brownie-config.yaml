@@ -8,7 +8,9 @@ compiler:
       - '@chainlink=smartcontractkit/chainlink-brownie-contracts@0.3.1'
       - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.5.0'
 wallets:
-  from_key: ${PRIVATE_KEY}
+  owner_key: ${OWNER_PRIVATE_KEY}
+  beneficiary_key: ${BENEFICIARY_PRIVATE_KEY}
+  participant_key: ${PARTICIPANT_PRIVATE_KEY}
 networks:
   default: development
   development:
@@ -20,5 +22,4 @@ networks:
     vrf_link_fee: 1_0000000000_0000000 # 0.1 LINK = 10 e17 WEI
     vrf_link_token: '0x01BE23585060835E02B77ef475b0Cc51aA1e0709'
     token_address: '0xc26E71E13E21557a02d0551f0899B06af7625524' # SRC
-    token_decimals: 18
     publish_source: True
