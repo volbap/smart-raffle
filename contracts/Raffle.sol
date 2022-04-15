@@ -32,7 +32,7 @@ contract Raffle is VRFConsumerBase, Ownable {
     /// The address of the ERC-20 token contract which is used as currency for the raffle.
     address public tokenAddress;
 
-    /// An address that can claim the collected profits from this raffle.
+    /// The address that can claim the collected profits from this raffle.
     address public beneficiaryAddress;
 
     /// A number between 0 and 100 that determines how much percentage
@@ -104,14 +104,26 @@ contract Raffle is VRFConsumerBase, Ownable {
     /// Triggered when this contract requests a random number from Chainlink's VRF.
     event RequestedRandomness(bytes32 requestId);
 
+    /// Triggered when the tickets sale is opened.
+    event OpenedTicketsSale();
+
+    /// Triggered when the tickets sale is closed.
+    event ClosedTicketsSale();
+
+    /// Triggered when a ticket is sold.
+    event TicketSold(address buyer, uint256 ticketNumber);
+
     /// Triggered when the contract has picked a winner.
-    event ObtainedWinner();
+    event ObtainedWinner(address winnerAddress, uint256 winnerTicketNumber);
 
     /// Triggered when prize funds have been transferred to the winner.
-    event PrizeTransferred();
+    event PrizeTransferred(address recipient, uint256 amount);
 
     /// Triggered when profits have been transferred to the beneficiary.
-    event ProfitsTransferred();
+    event ProfitsTransferred(address recipient, uint256 amount);
+
+    /// Triggered when a refund has been transferred to the claimer.
+    event RefundsTransferred(address recipient, uint256 amount);
 
     /// Triggered when the raffle is cancelled by the owner.
     event RaffleCancelled();
@@ -125,6 +137,7 @@ contract Raffle is VRFConsumerBase, Ownable {
         public
         onlyWhenAt(RaffleState.sellingTickets)
     {
+        address buyer = msg.sender;
         require(
             _ticketNumber >= ticketMinNumber &&
                 _ticketNumber <= ticketMaxNumber,
@@ -135,17 +148,14 @@ contract Raffle is VRFConsumerBase, Ownable {
             "Ticket number not available"
         );
         require(
-            IERC20(tokenAddress).balanceOf(msg.sender) >= ticketPrice,
+            IERC20(tokenAddress).balanceOf(buyer) >= ticketPrice,
             "This address doesn't have enough balance to buy a ticket"
         );
-        IERC20(tokenAddress).transferFrom(
-            msg.sender,
-            address(this),
-            ticketPrice
-        );
-        ticketAddress[_ticketNumber] = msg.sender;
-        addressSpentAmount[msg.sender] += ticketPrice;
+        IERC20(tokenAddress).transferFrom(buyer, address(this), ticketPrice);
+        ticketAddress[_ticketNumber] = buyer;
+        addressSpentAmount[buyer] += ticketPrice;
         soldTickets.push(_ticketNumber);
+        emit TicketSold(buyer, _ticketNumber);
     }
 
     /// Returns the current amount of tokens that the winner will obtain
@@ -179,13 +189,12 @@ contract Raffle is VRFConsumerBase, Ownable {
     /// the raffle got cancelled, the total amount they spent will be
     /// returned to their account when executing this transaction.
     function claimRefunds() public {
-        uint256 refundsAmount = getRefundableAmount();
-        require(
-            refundsAmount > 0,
-            "This address doesn't have a refundable amount"
-        );
-        IERC20(tokenAddress).transfer(msg.sender, refundsAmount);
-        addressSpentAmount[msg.sender] = 0;
+        address recipient = msg.sender;
+        uint256 amount = getRefundableAmount();
+        require(amount > 0, "This address doesn't have a refundable amount");
+        IERC20(tokenAddress).transfer(recipient, amount);
+        addressSpentAmount[recipient] = 0;
+        emit RefundsTransferred(recipient, amount);
     }
 
     ////////////////////////////////////////////////////////////
@@ -200,9 +209,11 @@ contract Raffle is VRFConsumerBase, Ownable {
         onlyWhenAt(RaffleState.finished)
         onlyIfPrizeNotYetTransferred
     {
-        IERC20(tokenAddress).transfer(msg.sender, getCurrentPrizeAmount());
+        address recipient = msg.sender;
+        uint256 amount = getCurrentPrizeAmount();
+        IERC20(tokenAddress).transfer(recipient, amount);
         prizeTransferred = true;
-        emit PrizeTransferred();
+        emit PrizeTransferred(recipient, amount);
     }
 
     ////////////////////////////////////////////////////////////
@@ -215,9 +226,11 @@ contract Raffle is VRFConsumerBase, Ownable {
         onlyWhenAt(RaffleState.finished)
         onlyIfProfitsNotYetTransferred
     {
-        IERC20(tokenAddress).transfer(msg.sender, getCurrentProfitsAmount());
+        address recipient = msg.sender;
+        uint256 amount = getCurrentProfitsAmount();
+        IERC20(tokenAddress).transfer(recipient, amount);
         profitsTransferred = true;
-        emit ProfitsTransferred();
+        emit ProfitsTransferred(recipient, amount);
     }
 
     ////////////////////////////////////////////////////////////
@@ -262,6 +275,7 @@ contract Raffle is VRFConsumerBase, Ownable {
         onlyWhenAt(RaffleState.created)
     {
         currentState = RaffleState.sellingTickets;
+        emit OpenedTicketsSale();
     }
 
     /// Closes the raffle so participants cannot buy any more tickets.
@@ -271,6 +285,7 @@ contract Raffle is VRFConsumerBase, Ownable {
         onlyWhenAt(RaffleState.sellingTickets)
     {
         currentState = RaffleState.salesFinished;
+        emit ClosedTicketsSale();
     }
 
     /// Closes the raffle so participants cannot buy any more tickets,
@@ -350,7 +365,7 @@ contract Raffle is VRFConsumerBase, Ownable {
         require(winnerAddress != address(0), "Cannot find a winner");
 
         currentState = RaffleState.finished;
-        emit ObtainedWinner();
+        emit ObtainedWinner(winnerAddress, uint256(winnerTicketNumber));
     }
 
     modifier onlyWhenAt(RaffleState _state) {

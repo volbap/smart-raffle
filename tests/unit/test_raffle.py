@@ -7,6 +7,7 @@ from brownie import (
     exceptions,
     interface,
     network,
+    Contract,
     Raffle,
     MockERC20,
     MockVRFCoordinator,
@@ -14,11 +15,19 @@ from brownie import (
 )
 import pytest
 
-from scripts.helpers import fund_with_link
-
 # TODO: Add ->  if network.show_active() not in LOCAL_BLOCKCHAIN_ENVIRONMENTS: pytest.skip()
 # TODO: Test events
 # TODO: syntax-sugar for 'with pytest.raises(exceptions.VirtualMachineError):'
+
+
+def fund_with_link(manager, amount=10_0000000000_000000000):
+    link_token_address = manager.vrfLinkToken()
+    link_token = Contract.from_abi(
+        MockLinkToken._name, link_token_address, MockLinkToken.abi
+    )
+    txn = link_token.transfer(manager, amount, get_owner_signature())
+    print("💰 RaffleManager contract now has some LINK!")
+    return txn
 
 
 def approve_token(address, amount):

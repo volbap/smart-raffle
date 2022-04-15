@@ -8,7 +8,9 @@ compiler:
       - '@chainlink=smartcontractkit/chainlink-brownie-contracts@0.3.1'
       - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.5.0'
 wallets:
-  from_key: ${PRIVATE_KEY}
+  owner_key: ${OWNER_PRIVATE_KEY}
+  beneficiary_key: ${BENEFICIARY_PRIVATE_KEY}
+  participant_key: ${PARTICIPANT_PRIVATE_KEY}
 networks:
   default: development
   development:
