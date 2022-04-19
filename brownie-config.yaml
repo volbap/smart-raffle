@@ -23,3 +23,10 @@ networks:
     vrf_link_token: '0x01BE23585060835E02B77ef475b0Cc51aA1e0709'
     token_address: '0xc26E71E13E21557a02d0551f0899B06af7625524' # SRC
     publish_source: True
+  polygon-test:
+    vrf_coordinator: '0x8C7382F9D8f56b33781fE506E897a4F1e2d17255'
+    vrf_key_hash: '0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4'
+    vrf_link_fee: 1_0000000000_0000 # 0.0001 LINK
+    vrf_link_token: '0x326C977E6efc84E512bB9C30f76E30c160eD06FB'
+    token_address: '0x326C977E6efc84E512bB9C30f76E30c160eD06FB' # Test LINK
+    publish_source: True

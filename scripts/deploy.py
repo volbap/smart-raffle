@@ -15,8 +15,8 @@ def get_participant_account():
 
 
 def main():
-    # deploy_raffle()
-    buy_tickets()
+    deploy_raffle()
+    # buy_tickets()
 
 
 def buy_tickets():
@@ -39,11 +39,11 @@ def deploy_raffle():
     vrf_coordinator = network_config["vrf_coordinator"]
     vrf_key_hash = network_config["vrf_key_hash"]
     vrf_link_fee = network_config["vrf_link_fee"]
-    ticket_price = Web3.toWei(5, "ether")
+    ticket_price = Web3.toWei(0.01, "ether")
     ticket_min_number = 1
     ticket_max_number = 200
-    profit_factor = 20  # 20% goes to beneficiary, 80% goes to winner
-    publish_source = network_config["publish_source"]
+    profit_factor = 10  # 10% goes to beneficiary, 90% goes to winner
+    publish_source = network_config.get("publish_source", False)
 
     raffle = Raffle.deploy(
         token_address,
