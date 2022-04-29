@@ -192,8 +192,8 @@ contract Raffle is VRFConsumerBase, Ownable {
         address recipient = msg.sender;
         uint256 amount = getRefundableAmount();
         require(amount > 0, "This address doesn't have a refundable amount");
-        IERC20(tokenAddress).transfer(recipient, amount);
         addressSpentAmount[recipient] = 0;
+        IERC20(tokenAddress).transfer(recipient, amount);
         emit RefundsTransferred(recipient, amount);
     }
 
@@ -211,8 +211,8 @@ contract Raffle is VRFConsumerBase, Ownable {
     {
         address recipient = msg.sender;
         uint256 amount = getCurrentPrizeAmount();
-        IERC20(tokenAddress).transfer(recipient, amount);
         prizeTransferred = true;
+        IERC20(tokenAddress).transfer(recipient, amount);
         emit PrizeTransferred(recipient, amount);
     }
 
@@ -228,8 +228,8 @@ contract Raffle is VRFConsumerBase, Ownable {
     {
         address recipient = msg.sender;
         uint256 amount = getCurrentProfitsAmount();
-        IERC20(tokenAddress).transfer(recipient, amount);
         profitsTransferred = true;
+        IERC20(tokenAddress).transfer(recipient, amount);
         emit ProfitsTransferred(recipient, amount);
     }
 
